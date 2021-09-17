@@ -11,8 +11,8 @@
 #include <assert.h>
 #include <chrono>
 
-const uint32_t command_buffer_size = 10;
-const uint32_t repeat_submit = 1000;
+const uint32_t command_buffer_size = 100;
+const uint32_t repeat_submit = 100;
 
 void record_work(VkCommandBuffer cmd_buf)
 {
@@ -93,7 +93,7 @@ void work(VkDevice device, Command command, VkQueue queue, bool run_with_multipl
     }
 }
 
-void run(bool run_with_multiple_queues)
+auto run(bool run_with_multiple_queues)
 {
     vkb::InstanceBuilder instance_builder;
     auto instance_ret =
@@ -143,7 +143,7 @@ void run(bool run_with_multiple_queues)
 
     std::vector<Command> commands;
     std::vector<std::thread> threads;
-    for (uint32_t i = 0; i < queue_families.size(); i++)
+    for (uint32_t i = 0; i < 6; i++)
     {
         Command command = create_command(dev);
         VkQueue queue = common_queue;
@@ -160,7 +160,8 @@ void run(bool run_with_multiple_queues)
         t.join();
     }
     auto end_time = std::chrono::system_clock::now();
-    std::cout << "Time taken: " << (end_time - start_time).count() << "ns\n";
+    auto time_taken = (end_time - start_time).count();
+    std::cout << "Time taken: " << time_taken << "ns\n";
 
     for (uint32_t i = 0; i < queue_families.size(); i++)
     {
@@ -169,11 +170,13 @@ void run(bool run_with_multiple_queues)
 
     vkb::destroy_device(device);
     vkb::destroy_instance(instance);
+    return time_taken;
 }
 int main()
 {
     std::cout << "Run with a dedicated VkQueue per thread\n";
-    run(true);
+    auto first = run(true);
     std::cout << "Run with a single VkQueue shared with all thread guarded by a mutex\n";
-    run(false);
+    auto second = run(false);
+	std::cout << "First run / Second run " << double(first)/second << "\n";
 }
